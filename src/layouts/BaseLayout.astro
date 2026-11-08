@@ -1,0 +1,90 @@
+---
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'CloudHaven 设计系统示例页。' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!--
+      首屏主题：在解析 body 前执行，深色用户不会先看到一闪而过的浅色。
+      内联脚本失败（隐私模式禁用 storage）时回落到浅色。
+    -->
+    <script is:inline>
+      try {
+        const saved = localStorage.getItem('theme');
+        if (
+          saved === 'dark' ||
+          (!saved && matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <main id="main">
+      <slot />
+    </main>
+
+    <script>
+      import { initReveal } from '../scripts/reveal';
+
+      const root = document.documentElement;
+      const toggle = document.querySelector<HTMLButtonElement>(
+        '[data-theme-toggle]'
+      );
+
+      const syncToggleLabel = (theme: 'light' | 'dark') => {
+        toggle?.setAttribute(
+          'aria-label',
+          theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'
+        );
+        toggle?.setAttribute('aria-pressed', String(theme === 'dark'));
+      };
+
+      const setTheme = (theme: 'light' | 'dark') => {
+        // 停掉颜色过渡，避免「浅色底 + 深色页头」的混合帧
+        root.dataset.themeSwitching = '';
+        root.dataset.theme = theme;
+        try {
+          localStorage.setItem('theme', theme);
+        } catch {}
+        syncToggleLabel(theme);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            delete root.dataset.themeSwitching;
+          });
+        });
+      };
+
+      syncToggleLabel(root.dataset.theme === 'dark' ? 'dark' : 'light');
+
+      toggle?.addEventListener('click', () => {
+        setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+      });
+
+      initReveal();
+    </script>
+  </body>
+</html>
